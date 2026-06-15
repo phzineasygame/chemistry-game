@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>☢️ Fuga da Zona Radioativa - A Missão de Dr. Leon</title>
+    <style>
+        :root {
+            --bg-color: #08080a;
+            --panel-color: #111116;
+            --nuclear-yellow: #f1c40f;
+            --critical-red: #e74c3c;
+            --safe-green: #2ecc71;
+            --text-color: #ecf0f1;
+            --border-style: 3px solid var(--nuclear-yellow);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 860px;
+            background: var(--panel-color);
+            border: var(--border-style);
+            box-shadow: 0 0 30px rgba(241, 196, 15, 0.15);
+            padding: 20px;
+            position: relative;
+        }
+
+        .screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 540px;
+            padding: 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: var(--nuclear-yellow);
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+            text-shadow: 0 0 15px rgba(241, 196, 15, 0.4);
+            letter-spacing: 2px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            background: var(--nuclear-yellow);
+            color: #000;
+            border: none;
+            padding: 14px 35px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            margin-top: 25px;
+            border-radius: 4px;
+            box-shadow: 0 4px 0 #c29d0b;
+        }
+
+        .btn:hover {
+            background: #fff;
+            box-shadow: 0 0 20px var(--nuclear-yellow);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 0px 0 #c29d0b;
+        }
+
+        #hud {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+            background: #171722;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #232330;
+        }
+
+        .hud-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .bar-container {
+            background: #232330;
+            width: 100%;
+            height: 25px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+            border: 1px solid #3c3c50;
+        }
+
+        #rad-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--safe-green), var(--nuclear-yellow), var(--critical-red));
+            transition: width 0.2s linear;
+        }
+
+        .inventory-icons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 5px;
+        }
+
+        .inventory-icons span {
+            background: #08080a;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #2d2d3d;
+            font-size: 0.9rem;
+            display: inline-block;
+        }
+
+        #canvas-wrapper {
+            position: relative;
+            width: 800px;
+            height: 480px;
+            margin: 0 auto;
+            border: 3px solid #2c3e50;
+            background: #050507;
+            border-radius: 4px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #quiz-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(8, 8, 10, 0.97);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            z-index: 10;
+        }
+
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+            max-width: 550px;
+            margin-top: 25px;
+        }
+
+        .quiz-btn {
+            background: #161621;
+            color: var(--text-color);
+            border: 1px solid #36364a;
+            padding: 14px;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .quiz-btn:hover {
+            background: #242433;
+            border-color: var(--nuclear-yellow);
+            padding-left: 20px;
+        }
+
+        #controls-hint {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+
+        .rad-critical {
+            animation: pulse-red-border 0.6s infinite alternate;
+        }
+
+        @keyframes pulse-red-border {
+            from { box-shadow: 0 0 10px rgba(231, 76, 60, 0.1); border-color: var(--nuclear-yellow); }
+            to { box-shadow: 0 0 30px rgba(231, 76, 60, 0.5); border-color: var(--critical-red); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+
+    <div id="intro-screen" class="screen">
+        <h1>☢️ FUGA DA ZONA RADIOATIVA</h1>
+        <h3 style="color: var(--nuclear-yellow); margin-bottom: 25px; letter-spacing: 1px;">Planta Tecnológica de Segurança Máxima</h3>
+        <p style="max-width: 680px; text-align: justify; color: #bdc3c7;">
+            O desafio final está pronto. A radiação avança em ritmo constante e as nuvens tóxicas bloqueiam caminhos essenciais na zona de escape.
+            <br><br>
+            <strong>Acesso à Câmara Secundária:</strong> Na última fase, foi liberada uma entrada na parte superior da parede do cofre subterrâneo. Use o recuo estratégico para se equipar antes do corredor final de fumaça!
+        </p>
+        <button class="btn" onclick="startGame()">Iniciar Operação</button>
+    </div>
+
+    <div id="main-game" class="hidden">
+        <div id="hud">
+            <div class="hud-panel">
+                <div><strong>LOCAL:</strong> <span id="hud-sector-name" style="color:var(--nuclear-yellow)">-</span></div>
+                <div style="margin-top: 5px;"><strong>AMOSTRAS COLETADAS:</strong> <span id="hud-samples" style="font-weight: bold;">0 / 0</span></div>
+            </div>
+            <div class="hud-panel">
+                <div><strong>CONTAMINAÇÃO BIOLÓGICA:</strong> <span id="rad-text" style="font-weight:bold;">0%</span></div>
+                <div class="bar-container">
+                    <div id="rad-bar"></div>
+                </div>
+            </div>
+            <div class="hud-panel" style="grid-column: span 2; margin-top: 5px; border-top: 1px dashed #2d2d3d; padding-top: 10px;">
+                <strong>SISTEMAS E EQUIPAMENTOS ATIVOS:</strong>
+                <div class="inventory-icons" id="hud-inventory">
+                    <span>Nenhum módulo acoplado</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas" width="800" height="480"></canvas>
+
+            <div id="quiz-overlay" class="hidden">
+                <h2 style="color: var(--nuclear-yellow); margin-bottom: 5px; letter-spacing: 1px;">🚨 AUTENTICAÇÃO DE COMPORTA</h2>
+                <p style="color: #95a5a6; font-size: 0.9rem; margin-bottom: 15px;">A validação técnica é obrigatória para despressurizar o setor.</p>
+                <p id="quiz-question" style="font-weight: bold; max-width: 650px; text-align: center; color: #fff;"></p>
+                <div class="quiz-options" id="quiz-answers"></div>
+            </div>
+        </div>
+
+        <div id="controls-hint">
+            Mova o Dr. Leon com <b>W, A, S, D</b> ou <b>Setas</b>. Use o medicamento antirradiação pressionando <b>M</b>.
+        </div>
+    </div>
+
+    <div id="victory-screen" class="screen hidden">
+        <h1 style="color: var(--safe-green);">🎉 EVACUAÇÃO CONCLUÍDA</h1>
+        <p style="max-width: 650px; color: #bdc3c7;">
+            Dr. Leon conseguiu transpor as portas blindadas de contenção e alcançou a zona externa de descontaminação. Sua coleta foi impecável!
+        </p>
+        <div style="background: #171722; padding: 20px; margin: 20px 0; border-radius: 6px; text-align: left; border: 1px solid #232330; min-width: 360px;">
+            <p style="color: var(--nuclear-yellow); font-weight: bold; border-bottom: 1px solid #2d2d3d; padding-bottom: 5px; margin-bottom: 10px;">📊 RELATÓRIO DO TURNO:</p>
+            <p>☣️ Radiação Final Absorvida: <span id="stat-rad" style="font-weight: bold;">0%</span></p>
+            <p>💾 Terminais Desbloqueados: <span id="stat-quizzes" style="font-weight: bold;">5/5</span></p>
+            <p>💊 Medicamentos Utilizados: <span id="stat-pills" style="font-weight: bold;">0</span></p>
+        </div>
+        <button class="btn" onclick="restartGame()">Reiniciar Planta</button>
+    </div>
+
+    <div id="gameover-screen" class="screen hidden">
+        <h1 style="color: var(--critical-red);">⚠️ ABSORÇÃO CRÍTICA</h1>
+        <p style="max-width: 600px; color: #bdc3c7;">
+            Os contadores Geiger integrados acusaram colapso biológico por radiação ionizante (100%). O Dr. Leon desmaiou nas instalações e a missão falhou.
+        </p>
+        <button class="btn" onclick="restartGame()">Tentar Novamente</button>
+    </div>
+
+</div>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    
+    const introScreen = document.getElementById("intro-screen");
+    const mainGame = document.getElementById("main-game");
+    const victoryScreen = document.getElementById("victory-screen");
+    const gameoverScreen = document.getElementById("gameover-screen");
+    const gameContainer = document.getElementById("game-container");
+
+    const sectorMeta = {
+        1: { name: "RECEPÇÃO DE EMERGÊNCIA", floor: "#151b26", wall: "#34495e", accent: "#1a252f" },
+        2: { name: "LABORATÓRIO ALFA - COFRE EXPANDIDO", floor: "#0e3a2f", wall: "#16a085", accent: "#0b2e24" },
+        3: { name: "ARMAZÉM DE ISÓTOPOS - ALA CENTRAL", floor: "#1b2631", wall: "#2980b9", accent: "#121921" },
+        4: { name: "NÚCLEO DO COMPUTADOR CENTRAL - ATALHO SELADO", floor: "#1f1f2e", wall: "#7f8c8d", accent: "#14141f" },
+        5: { name: "TÚNEL DE DESCOMPRESSÃO EXTERNA", floor: "#2c1a1a", wall: "#c0392b", accent: "#1f1212" }
+    };
+
+    const quizDatabase = [
+        {
+            question: "Qual símbolo internacional representa perigo imediato de emissão radioativa ou ionizante?",
+            options: ["A) ☣ (Perigo Biológico)", "B) ☢ (Trifólio de Radioatividade)", "C) ⚠ (Risco de Choque)", "D) ✳ (Sinalização Comum)"],
+            correct: 1
+        },
+        {
+            question: "Qual material densamente estruturado é o mais indicado para atuar como barreira física de blindagem contra raios Gama?",
+            options: ["A) Placa de Alumínio espessa", "B) Manta de Algodão cru", "C) Paredes pesadas de Chumbo ou Concreto denso", "D) Lâminas de Vidro temperado"],
+            correct: 2
+        },
+        {
+            question: "Qual o procedimento regulamentar imediato ao detectar um vazamento inesperado de líquido de arrefecimento radioativo?",
+            options: ["A) Tentar estancar o vazamento sem equipamentos próprios", "B) Evacuar o local imediatamente, isolar a área e acionar equipes de resposta técnica", "C) Aguardar o fim do expediente para reportar verbalmente", "D) Abrir as janelas para dispersar os gases"],
+            correct: 1
+        },
+        {
+            question: "A radiação pode ser encontrada de forma nativa e natural, sem qualquer interferência de usinas construídas pelo homem?",
+            options: ["A) Sim, no solo (gás radônio), em minerais de urânio e através de raios cósmicos", "B) Não, a radioatividade é um subproduto puramente moderno e sintético"],
+            correct: 0
+        },
+        {
+            question: "Qual o papel principal de pastilhas de Urânio-235 enriquecido no interior de um reator nuclear comercial de energia?",
+            options: ["A) Atuar como catalisador de resfriamento químico", "B) Sofrer fissão controlada para gerar calor intenso e vapor sob alta pressão", "C) Filtrar as implicitamente impurezas da água", "D) Reagir quimicamente com o oxigênio"],
+            correct: 1
+        }
+    ];
+
+    const TILE_SIZE = 40;
+    const COLS = 20;
+    const ROWS = 12;
+
+    let player = {
+        x: 1,
+        y: 2,
+        radiation: 0,
+        hasSuit: false,
+        pills: 3,
+        pillsUsed: 0,
+        samples: 0,
+        hasBattery: false,
+        powerRestored: false,
+        solvedQuizzes: 0,
+        currentActiveCode: "" 
+    };
+
+    let currentSector = 1;
+    let totalSamplesInMap = 0;
+    let mapGrid = [];
+    let gameInterval = null;
+    
+    let pulseTime = 0;
+    let particles = [];
+
+    let activeQuizIndex = null;
+    let isQuizActive = false;
+    let isTransitionActive = false;
+
+    const maps = {
+        1: [ 
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,'C',0,0,1,1,0,0,1,1,'P','P',1,1,1],
+            [1,0,1,0,1,1,1,1,0,1,1,0,0,1,1,'H',0,1,1,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,0,'L',0,0,0,1,1,1],
+            [1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1],
+            [1,0,0,0,2,2,2,0,2,2,1,0,1,1,1,1,1,1,1,1],
+            [1,0,0,0,2,2,2,0,2,2,1,0,0,0,0,0,0,0,0,1],
+            [1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,0,1,1,0,1],
+            [1,'P',1,1,1,1,0,1,1,1,1,0,0,0,0,0,1,1,0,1],
+            [1,0,0,0,0,0,'S',1,1,1,1,0,0,1,1,0,0,0,'D',1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        2: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1],
+            [1,0,1,0,1,0,'P',0,0,0,1,1,0,0,0,1,1,1,1,1],
+            [1,0,1,0,1,1,1,1,1,0,1,1,0,'H',0,1,1,1,1,1],
+            [1,0,1,0,0,0,0,0,1,0,1,1,0,'P',0,1,1,1,1,1],
+            [1,0,1,1,1,0,0,0,1,0,1,1,1,'L',1,1,1,1,1,1],
+            [1,0,0,0,1,0,'C',0,1,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,0,0,1,1,1,1,1,2,2,2,2,1,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,1,2,2,2,2,1,0,0,0,1,0,1],
+            [1,0,1,1,1,1,1,0,1,2,2,2,2,1,0,'S',0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,'D',1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        3: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,'S',0,0,0,2,2,2,2,1,1,0,0,1,1,1,1,1,1],
+            [1,1,1,1,1,0,2,2,2,2,1,1,0,'H',1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,0,1,1,0,'P',1,1,1,1,1,1],
+            [1,0,'C',0,1,1,1,1,0,1,1,1,1,'L',1,1,1,1,1,1],
+            [1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,1,0,1,1,1,2,2,2,2,1,1,1,1,1,0,1],
+            [1,0,1,0,1,0,1,0,0,2,2,2,2,1,0,0,0,1,0,1],
+            [1,0,1,0,0,0,1,0,'P',2,2,2,2,1,0,'S',0,0,0,1],
+            [1,'P',1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,'D',1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        4: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1], 
+            [1,0,1,'C',0,0,0,1,1,1,1,0,'H',0,1,1,1,1,1], 
+            [1,0,1,1,1,1,0,1,1,1,1,0,'P',0,1,1,1,1,1], 
+            [1,0,0,0,0,1,0,1,1,1,1,1,'L',1,1,1,1,1,1],
+            [1,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,0,1,1,1,1,2,2,2,2,1,1,1,1,1,0,1],
+            [1,'B',0,0,0,0,1,1,1,2,2,2,2,1,0,0,0,1,0,1],
+            [1,1,1,1,1,0,1,'P',1,2,2,2,2,1,'T',0,0,0,0,1],
+            [1,0,0,0,'S',0,0,0,0,0,0,0,0,0,0,1,1,1,'D',1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ],
+        5: [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,1], // Zona de spawn inicial totalmente segura
+            [1,0,0,0,0,0,0,0,0,0,2,2,2,2,2,2,2,2,2,1], // Corredor superior com radiação densa
+            [1,0,0,0,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,'C',0,1,0,0,0,0,1,1,1,1,1,0,0,0,1,1,1],
+            [1,1,1,0,1,0,1,1,0,1,1,1,1,1,0,'H',0,1,1,1],
+            [1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,'P',0,1,1,1],
+            [1,0,1,1,1,1,1,0,'S',0,0,1,1,1,1,'L',1,1,1],
+            [1,0,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,0,1], // Aumentada a fumaça tóxica no corredor inferior!
+            [1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1], // O index 5 da linha 9 virou 0 (Acesso aberto!)
+            [1,0,0,0,1,0,0,0,'H',0,'P',0,'P',0,0,0,0,0,'D',1], // Sala de itens abaixo do buraco de entrada
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ]
+    };
+
+    function loadSector(sectorNum) {
+        currentSector = sectorNum;
+        mapGrid = JSON.parse(JSON.stringify(maps[sectorNum]));
+        
+        player.x = 1;
+        player.y = 2; 
+        player.currentActiveCode = "";
+
+        totalSamplesInMap = 0;
+        for(let r = 0; r < ROWS; r++){
+            for(let c = 0; c < COLS; c++){
+                if(mapGrid[r][c] === 'S') totalSamplesInMap++;
+            }
+        }
+        
+        initParticlesForMap();
+        updateHUD();
+    }
+
+    function initParticlesForMap() {
+        particles = [];
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (mapGrid[r][c] === 2) {
+                    for(let i=0; i<4; i++) {
+                        particles.push({
+                            x: c * TILE_SIZE + Math.random() * TILE_SIZE,
+                            y: r * TILE_SIZE + Math.random() * TILE_SIZE,
+                            vx: (Math.random() - 0.5) * 0.5,
+                            vy: (Math.random() - 0.5) * 0.5,
+                            size: Math.random() * 3 + 2,
+                            alpha: Math.random() * 0.4 + 0.2,
+                            baseX: c * TILE_SIZE,
+                            baseY: r * TILE_SIZE
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    function startGame() {
+        introScreen.classList.add("hidden");
+        mainGame.classList.remove("hidden");
+        
+        player.radiation = 0;
+        player.hasSuit = false;
+        player.pills = 3; 
+        player.pillsUsed = 0;
+        player.samples = 0;
+        player.hasBattery = false;
+        player.powerRestored = false;
+        player.solvedQuizzes = 0;
+
+        loadSector(1);
+
+        if(gameInterval) clearInterval(gameInterval);
+        gameInterval = setInterval(() => {
+            if (!isQuizActive && !isTransitionActive) {
+                processRadiationLogic();
+                updateAnimationVariables();
+                drawGame();
+            }
+        }, 100); 
+    }
+
+    function processRadiationLogic() {
+        let currentTile = mapGrid[player.y][player.x];
+        let radAccumulation = 0.26; 
+
+        if (currentTile === 2) {
+            radAccumulation += 3.2; 
+        }
+
+        if (player.hasSuit) {
+            radAccumulation /= 3.5; 
+        }
+
+        player.radiation += radAccumulation;
+
+        if (player.radiation >= 100) {
+            player.radiation = 100;
+            endGame(false);
+        }
+
+        updateHUD();
+    }
+
+    function updateAnimationVariables() {
+        pulseTime += 0.12;
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < p.baseX || p.x > p.baseX + TILE_SIZE) p.vx *= -1;
+            if (p.y < p.baseY || p.y > p.baseY + TILE_SIZE) p.vy *= -1;
+        });
+    }
+
+    function updateHUD() {
+        const meta = sectorMeta[currentSector];
+        document.getElementById("hud-sector-name").innerText = meta.name;
+        document.getElementById("hud-samples").innerText = `${player.samples} / ${totalSamplesInMap}`;
+        
+        let radText = document.getElementById("rad-text");
+        let radBar = document.getElementById("rad-bar");
+        let percentage = Math.floor(player.radiation);
+        
+        radText.innerText = `${percentage}%`;
+        radBar.style.width = `${percentage}%`;
+
+        if(percentage > 75) {
+            radText.style.color = "var(--critical-red)";
+            gameContainer.classList.add("rad-critical");
+        } else if(percentage > 40) {
+            radText.style.color = "var(--nuclear-yellow)";
+            gameContainer.classList.remove("rad-critical");
+        } else {
+            radText.style.color = "var(--safe-green)";
+            gameContainer.classList.remove("rad-critical");
+        }
+
+        let invContainer = document.getElementById("hud-inventory");
+        invContainer.innerHTML = "";
+        
+        if(!player.hasSuit && player.pills === 0 && !player.hasBattery) {
+            invContainer.innerHTML = "<span>Nenhum módulo ativo</span>";
+        } else {
+            if(player.hasSuit) invContainer.innerHTML += "<span style='color: #2ecc71;'>🥼 Traje Anti-Radiação</span>";
+            if(player.pills > 0) invContainer.innerHTML += `<span>💊 Rad-Pills (x${player.pills}) [M]</span>`;
+            if(player.hasBattery) invContainer.innerHTML += "<span>🔋 Bateria Reserva</span>";
+            if(player.powerRestored) invContainer.innerHTML += "<span>⚡ Servidores Online</span>";
+        }
+    }
+
+    function drawGame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const style = sectorMeta[currentSector];
+
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                let tile = mapGrid[r][c];
+                let xPos = c * TILE_SIZE;
+                let yPos = r * TILE_SIZE;
+
+                if (tile === 1) {
+                    ctx.fillStyle = style.wall;
+                    ctx.fillRect(xPos, yPos, TILE_SIZE, TILE_SIZE);
+                    ctx.fillStyle = "#ebf5fb";
+                    ctx.fillRect(xPos, yPos, TILE_SIZE, 4);
+                    ctx.strokeStyle = style.accent;
+                    ctx.strokeRect(xPos, yPos, TILE_SIZE, TILE_SIZE);
+                } else {
+                    ctx.fillStyle = style.floor;
+                    ctx.fillRect(xPos, yPos, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeStyle = "rgba(0,0,0,0.12)";
+                    ctx.strokeRect(xPos, yPos, TILE_SIZE, TILE_SIZE);
+                }
+
+                if (tile === 2) {
+                    let pulseAlpha = 0.35 + Math.sin(pulseTime) * 0.15;
+                    let gradient = ctx.createRadialGradient(
+                        xPos + TILE_SIZE/2, yPos + TILE_SIZE/2, 2,
+                        xPos + TILE_SIZE/2, yPos + TILE_SIZE/2, TILE_SIZE * 0.9
+                    );
+                    gradient.addColorStop(0, `rgba(46, 204, 113, ${pulseAlpha + 0.25})`);
+                    gradient.addColorStop(0.6, `rgba(39, 174, 96, ${pulseAlpha})`);
+                    gradient.addColorStop(1, "rgba(21, 67, 34, 0)");
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(xPos, yPos, TILE_SIZE, TILE_SIZE);
+                }
+
+                ctx.font = "20px Courier New";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+
+                if (tile === 'S') {
+                    ctx.fillText("🧪", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                } else if (tile === 'H') {
+                    ctx.fillText("🥼", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                } else if (tile === 'P') {
+                    ctx.fillText("💊", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                } else if (tile === 'B') {
+                    ctx.fillText("🔋", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                } else if (tile === 'T') {
+                    ctx.fillText("🖥️", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                } else if (tile === 'C') {
+                    ctx.fillText("📟", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                } else if (tile === 'L') {
+                    ctx.fillStyle = "#2c3e50";
+                    ctx.fillRect(xPos + 2, yPos + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                    ctx.strokeStyle = "var(--nuclear-yellow)";
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(xPos + 5, yPos + 5, TILE_SIZE - 10, TILE_SIZE - 10);
+                    ctx.lineWidth = 1;
+                    ctx.fillStyle = "var(--nuclear-yellow)";
+                    ctx.font = "bold 8px Arial";
+                    ctx.fillText("KEYPAD", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                } else if (tile === 'D') {
+                    ctx.fillStyle = "#566573";
+                    ctx.fillRect(xPos + 3, yPos + 3, TILE_SIZE - 6, TILE_SIZE - 6);
+                    ctx.fillStyle = "var(--critical-red)";
+                    ctx.fillRect(xPos + 8, yPos + 15, TILE_SIZE - 16, 10);
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "bold 9px Arial";
+                    ctx.fillText("EXIT", xPos + TILE_SIZE/2, yPos + TILE_SIZE/2);
+                }
+            }
+        }
+
+        particles.forEach(p => {
+            ctx.fillStyle = `rgba(241, 196, 15, ${p.alpha * (0.7 + Math.sin(pulseTime) * 0.3)})`;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+
+        let pX = player.x * TILE_SIZE;
+        let pY = player.y * TILE_SIZE;
+
+        ctx.fillStyle = "#f1c40f"; 
+        ctx.fillRect(pX + 12, pY + 4, 16, 8);
+        ctx.fillStyle = "#fddcca"; 
+        ctx.fillRect(pX + 14, pY + 12, 12, 8);
+        ctx.fillStyle = "#000"; 
+        ctx.fillRect(pX + 16, pY + 14, 2, 2);
+        ctx.fillRect(pX + 22, pY + 14, 2, 2);
+        ctx.fillStyle = "#ffffff"; 
+        ctx.fillRect(pX + 10, pY + 20, 20, 16);
+        ctx.fillStyle = "#2980b9"; 
+        ctx.fillRect(pX + 18, pY + 20, 4, 4);
+        ctx.fillStyle = "#2c3e50"; 
+        ctx.fillRect(pX + 12, pY + 36, 6, 4);
+        ctx.fillRect(pX + 22, pY + 36, 6, 4);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 11px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 3;
+        ctx.fillText("Leon", pX + TILE_SIZE/2, pY - 2);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+    }
+
+    window.addEventListener("keydown", function(e) {
+        if (isQuizActive || isTransitionActive || player.radiation >= 100) return;
+
+        let nextX = player.x;
+        let nextY = player.y;
+
+        if (e.key === "w" || e.key === "W" || e.key === "ArrowUp") nextY--;
+        else if (e.key === "s" || e.key === "S" || e.key === "ArrowDown") nextY++;
+        else if (e.key === "a" || e.key === "A" || e.key === "ArrowLeft") nextX--;
+        else if (e.key === "d" || e.key === "D" || e.key === "ArrowRight") nextX++;
+        else if (e.key === "m" || e.key === "M") {
+            usePill();
+            return;
+        } else {
+            return;
+        }
+
+        if (nextX >= 0 && nextX < COLS && nextY >= 0 && nextY < ROWS) {
+            let targetTile = mapGrid[nextY][nextX];
+
+            if (targetTile !== 1) { 
+                if (targetTile === 'L') {
+                    handleLockedDoorInteraction(nextX, nextY);
+                    return;
+                }
+                if (targetTile === 'D') {
+                    handleExitTrigger();
+                    return;
+                }
+                player.x = nextX;
+                player.y = nextY;
+                handleItemCollection(targetTile, nextX, nextY);
+                drawGame();
+            }
+        }
+    });
+
+    function handleLockedDoorInteraction(x, y) {
+        isTransitionActive = true; 
+        if (!player.currentActiveCode) {
+            alert("🔒 COFRE TRANCADO: Encontre o dispositivo portátil de código (📟) neste nível para saber a combinação.");
+            isTransitionActive = false;
+            return;
+        }
+
+        let playerInput = prompt("⌨️ CÓDIGO REQUERIDO:\nInsira a senha de 4 dígitos que apareceu no aviso do cartão:");
+        
+        if (playerInput === player.currentActiveCode) {
+            mapGrid[y][x] = 0; 
+            alert("🔓 AUTENTICADO! A sala do cofre foi aberta com sucesso. Pegue os itens bônus!");
+            player.currentActiveCode = ""; 
+            updateHUD();
+            drawGame();
+        } else {
+            alert("❌ SENHA INCORRETA! O sistema blindou a fechadura. Tente novamente.");
+        }
+        isTransitionActive = false;
+    }
+
+    function handleItemCollection(tile, x, y) {
+        if (tile === 'S') {
+            player.samples++;
+            mapGrid[y][x] = 0;
+            isTransitionActive = true;
+            alert("🧪 AMOSTRA COLETADA! Guardada em segurança no contêiner biológico.");
+            isTransitionActive = false;
+            updateHUD();
+        } else if (tile === 'H') {
+            player.hasSuit = true;
+            mapGrid[y][x] = 0;
+            isTransitionActive = true;
+            alert("🥼 COFRE PIXADO: Você pegou o Traje de Chumbo Reforçado! Absorção de radiação severamente reduzida.");
+            isTransitionActive = false;
+            updateHUD();
+        } else if (tile === 'P') {
+            player.pills++;
+            mapGrid[y][x] = 0;
+            isTransitionActive = true;
+            alert("💊 ITEM COLETADO: Você encontrou uma Cápsula de Rad-Pill.");
+            isTransitionActive = false;
+            updateHUD();
+        } else if (tile === 'C') {
+            let codeGenerated = Math.floor(1000 + Math.random() * 9000).toString();
+            player.currentActiveCode = codeGenerated;
+            mapGrid[y][x] = 0;
+            
+            isTransitionActive = true; 
+            alert(`📟 TERMINAL SINCRONIZADO!\nO código gerado para o cofre de suprimentos é:\n\n➡ COMBINAÇÃO: ${codeGenerated} ⬅\n\nDECORE esse número! Ele não aparecerá no painel secundário.`);
+            isTransitionActive = false;
+            updateHUD();
+        } else if (tile === 'B') {
+            player.hasBattery = true;
+            mapGrid[y][x] = 0;
+            isTransitionActive = true;
+            alert("🔋 CÉLULA DE ENERGIA ENCONTRADA! Use-a no computador de comando.");
+            isTransitionActive = false;
+            updateHUD();
+        } else if (tile === 'T') {
+            isTransitionActive = true;
+            if (player.hasBattery) {
+                player.powerRestored = true;
+                player.hasBattery = false;
+                alert("⚡ ENERGIA RESTAURADA! Computadores centrais online.");
+                updateHUD();
+            } else if (!player.powerRestored) {
+                alert("🖥️ MONITOR OFF-LINE: Insira a Célula de Energia (🔋) reserva.");
+            }
+            isTransitionActive = false;
+        }
+    }
+
+    function usePill() {
+        if (player.pills > 0) {
+            player.pills--;
+            player.pillsUsed++;
+            player.radiation -= 30; 
+            if (player.radiation < 0) player.radiation = 0;
+            updateHUD();
+            drawGame();
+        }
+    }
+
+    function handleExitTrigger() {
+        isTransitionActive = true;
+        if (player.samples < totalSamplesInMap) {
+            alert(`⚠️ PROTOCOLO DE CONCEIÇÃO: Colete todas as amostras deste setor antes de avançar (${player.samples}/${totalSamplesInMap}).`);
+            isTransitionActive = false;
+            return;
+        }
+
+        if (currentSector === 4 && !player.powerRestored) {
+            alert("⚠️ TERMINAL BLOQUEADO: Ligue os computadores centrais (🖥️) para despressurizar.");
+            isTransitionActive = false;
+            return;
+        }
+
+        triggerQuiz(currentSector - 1);
+    }
+
+    function triggerQuiz(quizIndex) {
+        isQuizActive = true;
+        activeQuizIndex = quizIndex;
+        
+        const quizBox = document.getElementById("quiz-overlay");
+        const questionText = document.getElementById("quiz-question");
+        const answersContainer = document.getElementById("quiz-answers");
+
+        const quizData = quizDatabase[quizIndex];
+        questionText.innerText = quizData.question;
+        answersContainer.innerHTML = "";
+
+        quizData.options.forEach((opt, idx) => {
+            let button = document.createElement("button");
+            button.className = "quiz-btn";
+            button.innerText = opt;
+            button.onclick = () => evaluateAnswer(idx);
+            answersContainer.appendChild(button);
+        });
+
+        quizBox.classList.remove("hidden");
+    }
+
+    function evaluateAnswer(selectedIdx) {
+        const quizData = quizDatabase[activeQuizIndex];
+        const quizBox = document.getElementById("quiz-overlay");
+
+        if (selectedIdx === quizData.correct) {
+            alert("✅ PROTOCOLO COMPLETADO: Comporta liberada com sucesso.");
+            player.solvedQuizzes++;
+            
+            isQuizActive = false;
+            isTransitionActive = false;
+            quizBox.classList.add("hidden");
+
+            if (currentSector < 5) {
+                currentSector++;
+                player.samples = 0;
+                loadSector(currentSector);
+                drawGame();
+            } else {
+                endGame(true);
+            }
+        } else {
+            alert("❌ ERRO DE CÁLCULO: Vazamento interno gerado! (+15% Radiação)");
+            player.radiation += 15;
+            if (player.radiation >= 100) {
+                player.radiation = 100;
+                isQuizActive = false;
+                isTransitionActive = false;
+                quizBox.classList.add("hidden");
+                endGame(false);
+            }
+            updateHUD();
+        }
+    }
+
+    function endGame(isVictory) {
+        clearInterval(gameInterval);
+        mainGame.classList.add("hidden");
+        gameContainer.classList.remove("rad-critical");
+
+        if (isVictory) {
+            document.getElementById("stat-rad").innerText = `${Math.floor(player.radiation)}%`;
+            document.getElementById("stat-quizzes").innerText = `${player.solvedQuizzes} / 5`;
+            document.getElementById("stat-pills").innerText = player.pillsUsed;
+            victoryScreen.classList.remove("hidden");
+        } else {
+            gameoverScreen.classList.remove("hidden");
+        }
+    }
+
+    function restartGame() {
+        victoryScreen.classList.add("hidden");
+        gameoverScreen.classList.add("hidden");
+        isTransitionActive = false;
+        isQuizActive = false;
+        startGame();
+    }
+</script>
+</body>
+</html>
